@@ -1,14 +1,48 @@
-Thumbs.db
-.DS_Store
-.gradle
-build/
-target/
+# Build output
+bin/
+obj/
 out/
-.idea
-*.iml
-*.ipr
-*.iws
-.project
-.settings
-.classpath
-.factorypath
+publish/
+
+# .NET local state
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Python local state
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# Local data and generated artifacts
+data/
+outputs/
+logs/
+tmp/
+*.gpkg
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.tif
+*.tiff
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS noise
+.DS_Store
+Thumbs.db

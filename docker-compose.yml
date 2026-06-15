@@ -1,0 +1,56 @@
+name: geospatial-data-gateway
+
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: gdg-postgis
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-geostatusboard}
+      POSTGRES_USER: ${POSTGRES_USER:-gsb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gsb}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - gdg-postgis-data:/var/lib/postgresql/data
+      - ./docker/postgis/init:/docker-entrypoint-initdb.d:ro
+      - ./sql:/gateway-sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gsb} -d ${POSTGRES_DB:-geostatusboard}"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Geospatial.DataGateway.Api/Dockerfile
+    container_name: gdg-api
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgis: Host=postgis;Port=5432;Database=${POSTGRES_DB:-geostatusboard};Username=${POSTGRES_USER:-gsb};Password=${POSTGRES_PASSWORD:-gsb}
+      Gateway__MetadataSchema: ${GATEWAY_METADATA_SCHEMA:-geomain}
+      Gateway__DefaultFeatureSchema: ${GATEWAY_DEFAULT_FEATURE_SCHEMA:-public}
+    ports:
+      - "${API_PORT:-7070}:8080"
+    depends_on:
+      postgis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker/Dockerfile
+    container_name: gdg-worker
+    profiles:
+      - tools
+    environment:
+      GEOSPATIAL_GATEWAY_POSTGIS_URL: postgresql+psycopg://gsb:gsb@postgis:5432/geostatusboard
+    depends_on:
+      postgis:
+        condition: service_healthy
+    volumes:
+      - ./examples:/workspace/examples:ro
+      - ./outputs:/workspace/outputs
+
+volumes:
+  gdg-postgis-data:

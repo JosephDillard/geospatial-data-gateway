@@ -1,0 +1,3 @@
+incident_id,event_name,event_type,latitude,longitude,priority
+GDG-001,Demo runway inspection,Inspection,35.0402,-106.5317,High
+GDG-002,Demo utility outage,Utility,35.6171,-106.0881,Medium

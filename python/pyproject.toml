@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geospatial-data-gateway"
+version = "0.1.0"
+description = "Python ingest worker for the Geospatial Data Gateway."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "geopandas>=0.14",
+    "pandas>=2.2",
+    "psycopg[binary]>=3.1",
+    "pyogrio>=0.7",
+    "shapely>=2.0",
+    "sqlalchemy>=2.0",
+    "geoalchemy2>=0.14"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5"
+]
+
+[project.scripts]
+geospatial-data-gateway = "geospatial_data_gateway.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["geospatial_data_gateway*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

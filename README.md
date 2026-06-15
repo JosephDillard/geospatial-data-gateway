@@ -1,51 +1,144 @@
-## Grails 6.0.0 Documentation
+# Geospatial Data Gateway
 
-- [User Guide](https://docs.grails.org/6.0.0/guide/index.html)
-- [API Reference](https://docs.grails.org/6.0.0/api/index.html)
-- [Grails Guides](https://guides.grails.org/index.html)
----
+Geospatial Data Gateway is the intake and streaming control plane for the companion
+GeoAI and status-board projects. It accepts geospatial files or feed references,
+validates and normalizes them, loads clean layers into PostGIS, and exposes job
+state for downstream map applications.
 
-## Feature scaffolding documentation
+This repo is designed to sit beside:
 
-- [Grails Scaffolding Plugin documentation](https://grails.github.io/scaffolding/latest/groovydoc/)
+- `geoai-asset-detection-platform` - Python GeoAI workflows that create vector detections.
+- `geospatial-status-board` - Grails, GeoServer, PostGIS, and MapLibre status map.
 
-- [https://grails-fields-plugin.github.io/grails-fields/latest/guide/index.html](https://grails-fields-plugin.github.io/grails-fields/latest/guide/index.html)
+## What This Provides
 
-## Feature testcontainers documentation
+- ASP.NET Core API for dataset registration, ingest job tracking, health checks, and
+  future live update events.
+- Python ingest worker for GeoJSON, GeoPackage, zipped Shapefile, and CSV lat/lon
+  sources.
+- PostGIS schema for gateway metadata, ingest jobs, source catalog entries, and layer
+  load events.
+- Example local Docker stack for API, worker tooling, and PostGIS.
+- Contracts that make it easy for the status-board web view to refresh layers when
+  new data arrives.
 
-- [https://www.testcontainers.org/](https://www.testcontainers.org/)
+## Target Architecture
 
-## Feature micronaut-http-client documentation
+```text
+GeoJSON / GPKG / Shapefile / CSV / feeds
+        |
+        v
+ASP.NET Core API
+datasets, ingest jobs, status, live events
+        |
+        v
+Python ingest worker
+GeoPandas / GDAL / Shapely / SQLAlchemy
+        |
+        v
+PostGIS
+gateway metadata + publishable feature tables
+        |
+        v
+GeoServer + Geospatial Status Board
+WFS/GeoJSON layers today, live refresh later
+```
 
-- [Grails Micronaut HTTP Client documentation](https://docs.micronaut.io/latest/guide/index.html#httpClient)
+## Repository Layout
 
-## Feature database-migration documentation
+```text
+src/Geospatial.DataGateway.Api/   ASP.NET Core API and SignalR hub
+python/geospatial_data_gateway/   Python geospatial ingest worker package
+sql/                              PostGIS schema and helper SQL
+docker/                           Container build files and PostGIS init scripts
+docs/                             Architecture and API/worker contracts
+examples/                         Small sample input files
+```
 
-- [Grails Database Migration Plugin documentation](https://grails.github.io/grails-database-migration/latest/)
+## API
 
-- [https://www.liquibase.org/](https://www.liquibase.org/)
+The API project is intentionally small and operational:
 
-## Feature mongo-sync documentation
+- `GET /health`
+- `GET /datasets`
+- `POST /datasets`
+- `GET /ingest-jobs`
+- `GET /ingest-jobs/{jobId}`
+- `POST /ingest-jobs`
+- `PATCH /ingest-jobs/{jobId}`
+- `POST /ingest-jobs/{jobId}/events`
+- `GET /hubs/geospatial-updates` for SignalR clients
 
-- [Grails MongoDB Synchronous Driver documentation](https://docs.mongodb.com/drivers/java/sync/current/)
+The API stores its own metadata under the `geomain` schema by default. Feature tables
+can be loaded into `public` or another configured schema so GeoServer can publish
+them as map layers.
 
-- [https://docs.mongodb.com](https://docs.mongodb.com)
+## Python Worker
 
-## Feature views-markup documentation
+The worker package handles the GIS-heavy work:
 
-- [Grails Markup Views documentation](https://views.grails.org/)
+- Inspect a dataset and report geometry type, CRS, bounds, feature count, and columns.
+- Reproject to `EPSG:4326`.
+- Convert CSV files with latitude/longitude columns into point layers.
+- Load normalized features into PostGIS with gateway metadata columns.
 
-## Feature embedded-mongodb documentation
+Install locally:
 
-- [https://grails-plugins.github.io/grails-embedded-mongodb/latest](https://grails-plugins.github.io/grails-embedded-mongodb/latest)
+```powershell
+cd python
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
 
-## Feature geb documentation
+Inspect a sample:
 
-- [Grails Geb Functional Testing for Grails documentation](https://github.com/grails3-plugins/geb#readme)
+```powershell
+geospatial-data-gateway inspect ..\examples\sample-sites.geojson
+```
 
-- [https://www.gebish.org/manual/current/](https://www.gebish.org/manual/current/)
+Load into PostGIS:
 
-## Feature asset-pipeline-grails documentation
+```powershell
+geospatial-data-gateway load-postgis `
+  --source ..\examples\sample-sites.geojson `
+  --database-url postgresql+psycopg://gsb:gsb@localhost:5432/geostatusboard `
+  --schema public `
+  --table gateway_sample_sites `
+  --dataset-name sample-sites `
+  --if-exists replace
+```
 
-- [Grails Asset Pipeline Core documentation](https://www.asset-pipeline.com/manual/)
+## Docker
 
+The local stack is optional and aimed at integration testing:
+
+```powershell
+docker compose up --build
+```
+
+Default endpoints:
+
+```text
+API:     http://localhost:7070
+PostGIS: localhost:5432/geostatusboard
+```
+
+Default local credentials:
+
+```text
+PostGIS user/password: gsb / gsb
+```
+
+## Companion Workflow
+
+1. Register or submit a source through this gateway.
+2. The Python worker validates and loads it into PostGIS.
+3. GeoServer publishes the resulting feature table.
+4. The status board consumes the layer through WFS.
+5. Later, the status board can subscribe to SignalR events and refresh layers as soon
+   as a gateway job finishes.
+
+See [docs/architecture.md](docs/architecture.md) and
+[docs/ingest-contract.md](docs/ingest-contract.md) for the current contract.

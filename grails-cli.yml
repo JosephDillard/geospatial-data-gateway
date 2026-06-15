@@ -1,8 +1,0 @@
-applicationType: web
-defaultPackage: com.geoaxis
-testFramework: spock
-sourceLanguage: groovy
-buildTool: gradle
-gormImpl: gorm-hibernate5
-servletImpl: spring-boot-starter-tomcat
-features: [app-name, asset-pipeline-grails, base, database-migration, embedded-mongodb, geb, gorm-hibernate5, gradle, grails-application, grails-console, grails-dependencies, grails-gorm-testing-support, grails-gradle-plugin, grails-gsp, grails-url-mappings, grails-web, grails-web-testing-support, h2, logback, micronaut-http-client, micronaut-inject-groovy, mongo-sync, readme, scaffolding, spock, spring-boot-autoconfigure, spring-boot-starter, spring-boot-starter-tomcat, testcontainers, views-markup, yaml]

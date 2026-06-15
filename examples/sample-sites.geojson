@@ -1,0 +1,36 @@
+{
+  "type": "FeatureCollection",
+  "name": "sample-sites",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "EPSG:4326"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "site_name": "Kirtland AFB",
+        "category": "airfield",
+        "priority": "high"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-106.5317, 35.0402]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "site_name": "Santa Fe Regional Airport",
+        "category": "airport",
+        "priority": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-106.0881, 35.6171]
+      }
+    }
+  ]
+}
