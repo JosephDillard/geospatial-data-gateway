@@ -77,6 +77,80 @@ public sealed record CreateIngestEventRequest(
     string? Message,
     JsonElement? Payload);
 
+public sealed record DemoLayerRefreshRequest(
+    string? LayerKey,
+    Guid? JobId,
+    string? TargetSchema,
+    string? TargetTable,
+    string? TargetTypeName,
+    string? FilterValue,
+    long? FeatureCount,
+    string? Message)
+{
+    public ProblemMessage? Validate(string defaultFeatureSchema)
+    {
+        if (string.IsNullOrWhiteSpace(LayerKey) &&
+            string.IsNullOrWhiteSpace(TargetTable) &&
+            string.IsNullOrWhiteSpace(TargetTypeName))
+        {
+            return new ProblemMessage("Layer key, target table, or target type name is required.");
+        }
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(TargetSchema))
+            {
+                GatewayValidators.RequireIdentifier(TargetSchema, "target schema");
+            }
+
+            if (!string.IsNullOrWhiteSpace(TargetTable))
+            {
+                GatewayValidators.RequireIdentifier(TargetTable, "target table");
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            return new ProblemMessage(ex.Message);
+        }
+
+        return null;
+    }
+
+    public LayerRefreshPayload ToPayload(string defaultFeatureSchema) => new(
+        JobId,
+        string.IsNullOrWhiteSpace(LayerKey) ? null : LayerKey.Trim(),
+        string.IsNullOrWhiteSpace(TargetSchema) ? defaultFeatureSchema : TargetSchema.Trim(),
+        string.IsNullOrWhiteSpace(TargetTable) ? null : TargetTable.Trim(),
+        string.IsNullOrWhiteSpace(TargetTypeName) ? null : TargetTypeName.Trim(),
+        string.IsNullOrWhiteSpace(FilterValue) ? null : FilterValue.Trim(),
+        FeatureCount ?? 0,
+        string.IsNullOrWhiteSpace(Message) ? "Demo layer refresh requested." : Message.Trim(),
+        DateTimeOffset.UtcNow);
+}
+
+public sealed record LayerRefreshPayload(
+    Guid? JobId,
+    string? LayerKey,
+    string? TargetSchema,
+    string? TargetTable,
+    string? TargetTypeName,
+    string? FilterValue,
+    long FeatureCount,
+    string Message,
+    DateTimeOffset Utc)
+{
+    public static LayerRefreshPayload FromJob(IngestJobResponse job, string? filterValue = null) => new(
+        job.JobId,
+        null,
+        job.TargetSchema,
+        job.TargetTable,
+        $"{job.TargetSchema}:{job.TargetTable}",
+        filterValue,
+        job.FeatureCount,
+        $"Layer refresh requested for {job.TargetSchema}.{job.TargetTable}.",
+        DateTimeOffset.UtcNow);
+}
+
 public sealed record DatasetResponse(
     Guid DatasetId,
     string Name,

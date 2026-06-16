@@ -68,10 +68,50 @@ The API project is intentionally small and operational:
 - `PATCH /ingest-jobs/{jobId}`
 - `POST /ingest-jobs/{jobId}/events`
 - `GET /hubs/geospatial-updates` for SignalR clients
+- `POST /demo/layer-refresh` to broadcast a local demo map refresh event
 
 The API stores its own metadata under the `geomain` schema by default. Feature tables
 can be loaded into `public` or another configured schema so GeoServer can publish
 them as map layers.
+
+## Local SignalR Map Demo
+
+The gateway hosts a self-contained SignalR hub at:
+
+```text
+http://localhost:7070/hubs/geospatial-updates
+```
+
+The companion status-board map can subscribe directly to this hub and refresh a WFS
+layer when the gateway broadcasts `layer.refresh_requested`.
+
+With the status board running at `http://localhost:18088/GeoStatusBoard`, start the
+gateway API against the status-board Docker PostGIS network:
+
+```powershell
+docker build -t geospatial-data-gateway-api:dev -f src/Geospatial.DataGateway.Api/Dockerfile .
+docker run -d --name gdg-api-local `
+  --network geospatial-status-board_default `
+  -p 7070:8080 `
+  -e ASPNETCORE_URLS=http://+:8080 `
+  -e ConnectionStrings__Postgis="Host=postgis;Port=5432;Database=geostatusboard;Username=gsb;Password=gsb" `
+  -e Gateway__Cors__AllowedOrigins__0=http://localhost:18088 `
+  -e Gateway__Cors__AllowedOrigins__1=http://127.0.0.1:18088 `
+  geospatial-data-gateway-api:dev
+```
+
+Trigger a live map refresh:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://localhost:7070/demo/layer-refresh `
+  -ContentType 'application/json' `
+  -Body '{"layerKey":"detectedRoads","message":"Manual local SignalR demo refresh."}'
+```
+
+The event is local-only: browser -> gateway SignalR hub -> status-board map. It does
+not use Azure SignalR or any other hosted relay.
 
 ## Python Worker
 

@@ -30,6 +30,10 @@ services:
       ConnectionStrings__Postgis: Host=postgis;Port=5432;Database=${POSTGRES_DB:-geostatusboard};Username=${POSTGRES_USER:-gsb};Password=${POSTGRES_PASSWORD:-gsb}
       Gateway__MetadataSchema: ${GATEWAY_METADATA_SCHEMA:-geomain}
       Gateway__DefaultFeatureSchema: ${GATEWAY_DEFAULT_FEATURE_SCHEMA:-public}
+      Gateway__Cors__AllowedOrigins__0: ${GATEWAY_CORS_ORIGIN_0:-http://localhost:8080}
+      Gateway__Cors__AllowedOrigins__1: ${GATEWAY_CORS_ORIGIN_1:-http://127.0.0.1:8080}
+      Gateway__Cors__AllowedOrigins__2: ${GATEWAY_CORS_ORIGIN_2:-http://localhost:18088}
+      Gateway__Cors__AllowedOrigins__3: ${GATEWAY_CORS_ORIGIN_3:-http://127.0.0.1:18088}
     ports:
       - "${API_PORT:-7070}:8080"
     depends_on:

@@ -2,7 +2,8 @@ using System.Text.Json;
 using Geospatial.DataGateway.Api;
 using Microsoft.AspNetCore.SignalR;
 using Npgsql;
-using NpgsqlTypes;
+
+const string GatewayCorsPolicy = "GatewayCors";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,13 +17,38 @@ var metadataSchema = GatewayValidators.RequireIdentifier(
 var defaultFeatureSchema = GatewayValidators.RequireIdentifier(
     builder.Configuration["Gateway:DefaultFeatureSchema"] ?? "public",
     "default feature schema");
+var corsOrigins = builder.Configuration
+    .GetSection("Gateway:Cors:AllowedOrigins")
+    .GetChildren()
+    .Select(origin => origin.Value?.Trim())
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .Cast<string>()
+    .ToArray();
 
 builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString));
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(GatewayCorsPolicy, policy =>
+    {
+        if (corsOrigins.Length > 0)
+        {
+            policy.WithOrigins(corsOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        }
+    });
+});
 builder.Services.AddSignalR();
 
 var app = builder.Build();
 
 await GatewaySchema.EnsureCreatedAsync(app.Services.GetRequiredService<NpgsqlDataSource>(), metadataSchema);
+
+if (corsOrigins.Length > 0)
+{
+    app.UseCors(GatewayCorsPolicy);
+}
 
 app.MapGet("/health", () => Results.Ok(new
 {
@@ -228,13 +254,10 @@ app.MapPatch("/ingest-jobs/{jobId:guid}", async (
     await hub.Clients.All.SendAsync("ingest.job.updated", job, cancellationToken);
     if (job.Status == "loaded")
     {
-        await hub.Clients.All.SendAsync("layer.refresh_requested", new
-        {
-            job.JobId,
-            job.TargetSchema,
-            job.TargetTable,
-            job.FeatureCount
-        }, cancellationToken);
+        await hub.Clients.All.SendAsync(
+            "layer.refresh_requested",
+            LayerRefreshPayload.FromJob(job, filterValue: job.JobId.ToString()),
+            cancellationToken);
     }
 
     return Results.Ok(job);
@@ -278,6 +301,22 @@ app.MapPost("/ingest-jobs/{jobId:guid}/events", async (
 
     await hub.Clients.All.SendAsync(request.EventType, ingestEvent, cancellationToken);
     return Results.Accepted($"/ingest-jobs/{jobId}/events/{ingestEvent.EventId}", ingestEvent);
+});
+
+app.MapPost("/demo/layer-refresh", async (
+    DemoLayerRefreshRequest request,
+    IHubContext<GeospatialUpdatesHub> hub,
+    CancellationToken cancellationToken) =>
+{
+    var validation = request.Validate(defaultFeatureSchema);
+    if (validation is not null)
+    {
+        return Results.BadRequest(validation);
+    }
+
+    var payload = request.ToPayload(defaultFeatureSchema);
+    await hub.Clients.All.SendAsync("layer.refresh_requested", payload, cancellationToken);
+    return Results.Accepted("/demo/layer-refresh", payload);
 });
 
 app.MapHub<GeospatialUpdatesHub>("/hubs/geospatial-updates");
