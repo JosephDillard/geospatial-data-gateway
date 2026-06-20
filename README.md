@@ -7,8 +7,22 @@ state for downstream map applications.
 
 This repo is designed to sit beside:
 
+- `geospatial-etl-validation-toolkit` - Pre-load data readiness checks and handoff reports.
 - `geoai-asset-detection-platform` - Python GeoAI workflows that create vector detections.
 - `geospatial-status-board` - Grails, GeoServer, PostGIS, and MapLibre status map.
+
+## Repository Map
+
+This repo is the ingest and eventing layer in the public geospatial stack. It
+accepts files or feed references, records job state, loads clean layers to
+PostGIS, and notifies downstream maps when layers are ready.
+
+- [Portfolio site](https://josephdillard.github.io/JosephDillard/)
+- [Geospatial Data Gateway repo](https://github.com/JosephDillard/geospatial-data-gateway)
+- [Geospatial Status Board](https://github.com/JosephDillard/geospatial-status-board)
+- [GeoAI Asset Detection Platform](https://github.com/JosephDillard/geoai-asset-detection-platform)
+- [Geospatial ETL Validation Toolkit](https://github.com/JosephDillard/geospatial-etl-validation-toolkit)
+- [Geospatial MCP Services](https://github.com/JosephDillard/geospatial-mcp-services)
 
 ## What This Provides
 
