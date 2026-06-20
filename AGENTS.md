@@ -5,10 +5,16 @@ geospatial stack. It accepts geospatial sources, validates and normalizes them,
 loads feature tables into PostGIS, and exposes API/SignalR endpoints for map
 applications.
 
+## Suggested GitHub Description
+
+.NET and Python geospatial data gateway for registering datasets, loading validated layers into PostGIS, and broadcasting live map refresh events.
+
 ## Stack Context
 
 Related sibling repos:
 
+- `geospatial-etl-validation-toolkit` provides pre-load validation reports and
+  readiness checks for files this gateway may ingest.
 - `geoai-asset-detection-platform` can produce vector detections that this
   gateway may load or register.
 - `geospatial-status-board` visualizes PostGIS/GeoServer layers and subscribes
