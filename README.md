@@ -198,3 +198,7 @@ PostGIS user/password: gsb / gsb
 
 See [docs/architecture.md](docs/architecture.md) and
 [docs/ingest-contract.md](docs/ingest-contract.md) for the current contract.
+
+## Repository guidance and copyright
+
+Repository-specific coding and validation instructions are in [AGENTS.md](AGENTS.md). See [COPYRIGHT.md](COPYRIGHT.md) for ownership, licensing scope, and third-party notices. The existing [MIT license](LICENSE) remains in effect.
